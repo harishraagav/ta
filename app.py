@@ -1,8 +1,16 @@
 import os
 import requests
 from flask import Flask, render_template, request, jsonify, send_from_directory
+# --- VERCEL PATHING FIX ---
+# Get the absolute path of the directory where this file is located
+base_dir = os.path.abspath(os.path.dirname(__file__))
+# Define the static and template folder paths relative to base_dir
+static_folder_path = os.path.join(base_dir, 'static')
 
-app = Flask(__name__, static_folder='static', template_folder='static')
+app = Flask(__name__, 
+            static_folder=static_folder_path, 
+            template_folder=static_folder_path) # Point both to the same 'static' dir
+
 
 # --- CONFIGURATION ---
 # We'll get this URL from our n8n workflow later.
@@ -73,3 +81,4 @@ def send_message():
 # This is the Vercel entry point
 if __name__ == "__main__":
     app.run(debug=True)
+
