@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>THOZHA AI</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Simple scrollbar styling */
+        #chat-log::-webkit-scrollbar {
+            width: 6px;
+        }
+        #chat-log::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 10px;
+        }
+        #chat-log::-webkit-scrollbar-thumb {
+            background: #94a3b8;
+            border-radius: 10px;
+        }
+        #chat-log::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
+        .message {
+            opacity: 0;
+            transform: translateY(10px);
+            animation: fadeIn 0.3s forwards;
+        }
+        @keyframes fadeIn {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .dot-flashing {
+            position: relative;
+            width: 6px;
+            height: 6px;
+            border-radius: 5px;
+            background-color: #475569;
+            color: #475569;
+            animation: dotFlashing 1s infinite linear alternate;
+            animation-delay: .5s;
+        }
+        .dot-flashing::before, .dot-flashing::after {
+            content: '';
+            display: inline-block;
+            position: absolute;
+            top: 0;
+        }
+        .dot-flashing::before {
+            left: -10px;
+            width: 6px;
+            height: 6px;
+            border-radius: 5px;
+            background-color: #475569;
+            color: #475569;
+            animation: dotFlashing 1s infinite alternate;
+            animation-delay: 0s;
+        }
+        .dot-flashing::after {
+            left: 10px;
+            width: 6px;
+            height: 6px;
+            border-radius: 5px;
+            background-color: #475569;
+            color: #475569;
+            animation: dotFlashing 1s infinite alternate;
+            animation-delay: 1s;
+        }
+        @keyframes dotFlashing {
+            0% { background-color: #475569; }
+            50%, 100% { background-color: #cbd5e1; }
+        }
+    </style>
+</head>
+<body class="h-full bg-slate-100 flex items-center justify-center">
+
+    <div class="flex flex-col w-full max-w-2xl h-full md:h-[700px] bg-white shadow-2xl rounded-lg overflow-hidden">
+        
+        <!-- Header -->
+        <header class="bg-slate-800 text-white p-4 shadow-md">
+            <h1 class="text-xl font-bold text-center">J.A.R.V.I.S.</h1>
+        </header>
+
+        <!-- Chat Log -->
+        <main id="chat-log" class="flex-1 p-4 overflow-y-auto bg-slate-50 space-y-4">
+            <!-- Agent welcome message -->
+            <div class="message flex">
+                <div class="flex-shrink-0 bg-slate-700 text-white h-8 w-8 rounded-full flex items-center justify-center font-bold text-sm">AI</div>
+                <div class="ml-3 bg-slate-200 text-slate-800 p-3 rounded-lg rounded-tl-none max-w-xs md:max-w-md">
+                    <p class="text-sm">Hello! I am online and ready to assist.</p>
+                </div>
+            </div>
+            
+            <!-- Messages will be added here -->
+        </main>
+
+        <!-- Loading Indicator -->
+        <div id="loading-indicator" class="hidden p-4">
+             <div class="flex">
+                <div class="flex-shrink-0 bg-slate-700 text-white h-8 w-8 rounded-full flex items-center justify-center font-bold text-sm">AI</div>
+                <div class="ml-3 bg-slate-200 text-slate-800 p-3 rounded-lg rounded-tl-none inline-flex items-center justify-center">
+                    <div class="dot-flashing"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Input Form -->
+        <footer class="p-4 bg-white border-t border-slate-200">
+            <form id="chat-form" class="flex items-center space-x-3">
+                <input 
+                    type="text" 
+                    id="message-input" 
+                    placeholder="Type your message..." 
+                    autocomplete="off"
+                    class="flex-1 w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                >
+                <button 
+                    type="submit" 
+                    id="send-button"
+                    class="px-5 py-3 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                    Send
+                </button>
+            </form>
+        </footer>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const chatLog = document.getElementById("chat-log");
+            const chatForm = document.getElementById("chat-form");
+            const messageInput = document.getElementById("message-input");
+            const sendButton = document.getElementById("send-button");
+            const loadingIndicator = document.getElementById("loading-indicator");
+
+            // Function to add a message to the chat log
+            function addMessage(sender, text) {
+                const messageDiv = document.createElement("div");
+                messageDiv.classList.add("message", "flex");
+
+                if (sender === "user") {
+                    messageDiv.classList.add("justify-end");
+                    messageDiv.innerHTML = `
+                        <div class="mr-3 bg-blue-600 text-white p-3 rounded-lg rounded-br-none max-w-xs md:max-w-md">
+                            <p class="text-sm">${text}</p>
+                        </div>
+                        <div class="flex-shrink-0 bg-blue-200 text-blue-800 h-8 w-8 rounded-full flex items-center justify-center font-bold text-sm">U</div>
+                    `;
+                } else {
+                    // Agent message
+                    messageDiv.innerHTML = `
+                        <div class="flex-shrink-0 bg-slate-700 text-white h-8 w-8 rounded-full flex items-center justify-center font-bold text-sm">AI</div>
+                        <div class="ml-3 bg-slate-200 text-slate-800 p-3 rounded-lg rounded-tl-none max-w-xs md:max-w-md">
+                            <p class="text-sm">${text}</p>
+                        </div>
+                    `;
+                }
+                chatLog.appendChild(messageDiv);
+                
+                // Scroll to the bottom
+                chatLog.scrollTop = chatLog.scrollHeight;
+            }
+            
+            // Function to set loading state
+            function setLoading(isLoading) {
+                if (isLoading) {
+                    loadingIndicator.classList.remove("hidden");
+                    chatLog.scrollTop = chatLog.scrollHeight;
+                    sendButton.disabled = true;
+                    messageInput.disabled = true;
+                } else {
+                    loadingIndicator.classList.add("hidden");
+                    sendButton.disabled = false;
+                    messageInput.disabled = false;
+                    messageInput.focus();
+                }
+            }
+
+            // Handle form submission
+            chatForm.addEventListener("submit", async (e) => {
+                e.preventDefault();
+                
+                const messageText = messageInput.value.trim();
+                if (messageText === "") return;
+
+                // Add user message to chat
+                addMessage("user", messageText);
+
+                // Clear input
+                messageInput.value = "";
+                
+                // Show loading
+                setLoading(true);
+
+                try {
+                    // Send message to the Flask backend
+                    const response = await fetch("/send_message", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                        },
+                        body: JSON.stringify({ message: messageText }),
+                    });
+
+                    // Hide loading
+                    setLoading(false);
+
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        addMessage("agent", `Error: ${errorData.error || response.statusText}`);
+                        return;
+                    }
+
+                    const data = await response.json();
+                    
+                    // Add agent's reply to chat
+                    if (data.reply) {
+                        addMessage("agent", data.reply);
+                    } else if (data.error) {
+                        addMessage("agent", `Error from agent: ${data.error}`);
+                    }
+
+                } catch (error) {
+                    // Hide loading
+                    setLoading(false);
+                    console.error("Fetch error:", error);
+                    addMessage("agent", "Sorry, I couldn't connect to the server. Please try again.");
+                }
+            });
+            
+            // Focus input on load
+            messageInput.focus();
+        });
+    </script>
+</body>
+</html>
